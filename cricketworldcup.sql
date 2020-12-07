@@ -110,9 +110,7 @@ UPDATE Players SET PTeam_ID=6 WHERE P_ID=54;
 INSERT INTO Players(P_Role, P_DOB, PTeam_ID, P_Name) VALUES ('BOWLER','1989-07-22 ',6,'Trent Boult'),('BOWLER','1991-12-14',6,'Matt Henry'),('W-K','1992-04-02',6,'Tom Latham'),('BATSMAN','1986-09-30',6,'Martin Guptill'),('BOWLER','1991-06-13',6,'Lockie Ferguson'),('BATSMAN','1984-03-08',6,'Ross Taylor'),('A-R','1986-07-22',6,'Colin de Grandhomme'),('A-R','1990-09-17',6,'Jimmy Neesham'),('A-R','1992-02-05',6,'Mitchell Santner'),('BATSMAN','1991-11-15',6,'Henry Nicholls');
 
 
-SELECT COUNT(P_ID) FROM Players WHERE PTeam_ID=6;
-SELECT P_ID FROM Players WHERE P_Name='Kane Williamson';
-SELECT * FROM Teams;
+
 
 INSERT INTO Players(P_Role, P_DOB, PTeam_ID,P_Name) VALUES('A-R','1989-03-02', 5, 'Chris Woakes'); 
 DESC Matches;
@@ -132,18 +130,27 @@ UPDATE Players SET P_noOfMatchesPlayed= 10,Runs_Scored=10,Balls_faced=15 ,No_of_
  INSERT INTO team_match_stats VALUES (1,1,221,10,0,'18 RUNS'), (4,2,223,10,0,'8 WICKETS'),(5,2,226,2,1,'18 RUNS'),(5,3,241,10,1,'Super Over'),(6,1,239,8,1,'18 RUNS'),(6,3,241,8,0,'Super Over');
 DESC team_match_stats;
 DESC Teams;
+#Various queries
 SELECT * FROM Teams t INNER JOIN team_match_stats tm ON  t.Team_ID = tm.Team_ID ORDER BY Match_ID DESC, Win_or_loss DESC; 
 UPDATE Teams SET Matches_Played=(SELECT COUNT(Match_ID) FROM team_match_stats WHERE Team_ID=6),Matches_Won=(SELECT COUNT(Match_ID) FROM team_match_stats WHERE Team_ID=6 AND Win_or_loss=1),Matches_Lost=(SELECT COUNT(Match_ID) FROM team_match_stats WHERE Team_ID=6 AND Win_or_loss=0) WHERE Team_ID=6;
 SELECT Team_Name FROM Teams t INNER JOIN team_match_stats tm ON  t.Team_ID = tm.Team_ID WHERE Match_ID=3 AND Win_or_loss=1; 
+SELECT Team_Name FROM Teams t INNER JOIN team_match_stats tm ON  t.Team_ID = tm.Team_ID WHERE Match_ID=3 AND Win_or_loss=0; 
 SELECT Team_Name FROM Teams t INNER JOIN team_match_stats tm ON  t.Team_ID = tm.Team_ID WHERE (Match_ID=2 OR Match_ID=1) AND Win_or_loss=0;
 SELECT Match_ID FROM Matches;
 SELECT Team_Name,Margin FROM Teams t INNER JOIN team_match_stats tm ON t.Team_ID=tm.Team_ID WHERE Match_ID=1 AND Win_or_loss=1;
-DESC matches;
+SELECT Team_Name FROM Teams t INNER JOIN team_match_stats tm ON t.Team_ID=tm.Team_ID WHERE Match_ID=1 AND Win_or_loss=0;
+
 SELECT M_datetime,Stage FROM Matches WHERE Match_ID=1;
-DESC Players;
+
 SELECT P_Name,P_Role,Runs_Scored FROM Players WHERE Runs_Scored>100 order by Runs_Scored DESC;
 SELECT P_Name,P_Role,Wickets_Taken FROM Players WHERE Wickets_Taken>5 order by Wickets_Taken DESC;
 SELECT P_Name,P_Role,No_of_DismissalsAffected FROM Players WHERE No_of_DismissalsAffected>3 order by No_of_DismissalsAffected DESC;
 SELECT P_Name,P_Role,Runs_Conceded/Balls_bowled*6 Economy FROM Players WHERE Balls_bowled>18 ORDER BY Economy;
 SELECT * FROM team_match_stats;
 SELECT P_Name,P_Role,Runs_Scored/Balls_faced*100 AS SR FROM Players WHERE Balls_faced>18 ORDER BY SR DESC;
+$Triggers
+DELIMITER $$
+CREATE TRIGGER Team_Captain AFTER INSERT ON Teams FOR EACH ROW BEGIN UPDATE Players SET PTeam_ID=NEW.Team_ID WHERE Pteam_ID=NULL; END$$
+CREATE TRIGGER Team_stats_update AFTER INSERT ON team_match_stats FOR EACH ROW BEGIN UPDATE Teams SET Matches_Played=Matches_Played+1 WHERE Team_ID=NEW.Team_ID; IF NEW.Win_or_loss=1 THEN UPDATE Teams SET Matches_Won=Matches_Won+1 WHERE Team_ID=NEW.Team_ID; ELSE UPDATE Teams SET Matches_Lost=Matches_Lost+1 WHERE Team_ID=NEW.Team_ID; END IF; END$$
+CREATE TRIGGER Player_match_update AFTER INSERT ON player_match FOR EACH ROW BEGIN UPDATE Players SET P_noOfMatchesPlayed=P_noOfMatchesPlayed+1 WHERE P_ID=NEW.P_ID; END$$
+SHOW TABLES;
